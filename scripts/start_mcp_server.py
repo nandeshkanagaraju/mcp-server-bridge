@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from core.mcp.tools.execute_query import execute_query
-
+from core.mcp.tools.validate_query import is_safe_query
 
 # Database config
 db_config = {
@@ -26,9 +26,8 @@ def read_root():
 # Query endpoint
 @app.post("/query")
 def run_query(request: QueryRequest):
-    valid, msg = True, ""  # You can integrate validate_query later
-    if not valid:
-        raise HTTPException(status_code=400, detail=msg)
+    if not is_safe_query(request.query):
+        raise HTTPException(status_code=400, detail="Unsafe query detected")
     result = execute_query(request.query, db_config)
     return {"result": result}
 
