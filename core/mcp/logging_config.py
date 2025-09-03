@@ -10,7 +10,8 @@ from core.mcp.tools.describe_table import describe_table
 from core.mcp.tools.get_table_data import get_table_data
 from core.mcp.tools.validate_query import validate_query
 
-logger = setup_logger("MCPServer")
+
+logger = setup_logger("MCP")
 
 db_config = {
     "host": "localhost",

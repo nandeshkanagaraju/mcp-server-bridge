@@ -1,21 +1,13 @@
-import mysql.connector
-from core.mcp.logging_config import setup_logging
+from config.logger import logger
+from .execute_query import run_execute_query
 
-logger = setup_logging("DescribeTable")
-
-def describe_table(table_name: str, db_config: dict):
-    """Describe a table structure (columns and types)."""
+def run_describe_table(table_name: str):
     logger.info(f"Describing table: {table_name}")
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(f"DESCRIBE {table_name};")
-        description = cursor.fetchall()
-        cursor.close()
-        conn.close()
-
+    query = f"DESCRIBE {table_name};"
+    result = run_execute_query(query)
+    if result["status"] == "success":
         logger.info(f"Table description fetched for {table_name}")
-        return description
-    except mysql.connector.Error as e:
-        logger.error(f"Database error while describing {table_name}: {e}")
+        return result["data"]
+    else:
+        logger.error(f"Failed to describe table {table_name}")
         return []
