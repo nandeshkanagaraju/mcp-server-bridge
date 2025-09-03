@@ -243,6 +243,29 @@ python scripts/test_mcp_connection.py
 | `get_table_data` | Retrieve sample data from tables | Data exploration |
 | `validate_query` | Validate SQL syntax and security | Query validation |
 
+---
+
+## 📝 Logging & Observability Enhancements
+
+The `logging-tools` feature introduces **centralized structured logging** for all MCP tools and server operations, providing:
+
+- **Automatic logging** for every tool execution (`execute_query`, `get_schema`, `list_tables`, `describe_table`, `get_table_data`, `validate_query`).
+- **Info, warning, and error levels** to track success, failures, and exceptions.
+- **Query and schema logging** to trace SQL statements and database interactions.
+- **Consistent log format** with timestamps, tool names, and execution results.
+- **Easy debugging**: Quickly identify which tool or query caused issues.
+- **Optional logging test script**: `scripts/test_logging_all.py` validates all tools and generates example logs.
+
+### Example Log Output
+2025-09-04 02:31:35,418 | INFO | MCPServer | Executing query: SELECT * FROM employees LIMIT 3;
+2025-09-04 02:31:35,522 | INFO | MCPServer | Query successful. Returned 3 rows.
+2025-09-04 02:31:35,545 | INFO | MCPServer | Schema fetched: ['assignments', 'departments', 'employees', 'projects']
+
+
+> Logs are stored in a centralized manner and can be configured via `observability/logging_config.py`.
+
+---
+
 ## 🔌 MCP Resources
 
 | Resource | Description | URI Pattern |
