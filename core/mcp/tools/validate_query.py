@@ -1,15 +1,13 @@
-FORBIDDEN_KEYWORDS = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE"]
+from config.logger import logger
 
-def is_safe_query(query: str) -> bool:
+def validate_query(query: str):
     """
-    Returns True if the query is safe (only SELECT), False otherwise.
+    Basic validation: check if query is a SELECT statement
     """
-    query_upper = query.strip().upper()
-    # Must start with SELECT
-    if not query_upper.startswith("SELECT"):
-        return False
-    # Must not contain forbidden keywords
-    for keyword in FORBIDDEN_KEYWORDS:
-        if keyword in query_upper:
-            return False
-    return True
+    logger.info(f"Validating query: {query}")
+    if not query.strip().lower().startswith("select"):
+        msg = "Only SELECT queries are allowed."
+        logger.warning(f"Query validation failed: {msg}")
+        return False, msg
+    logger.info("Query validation passed")
+    return True, ""
