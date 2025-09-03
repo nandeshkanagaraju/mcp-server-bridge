@@ -1,11 +1,14 @@
-from core.mcp.tools.execute_query import execute_query
+# scripts/test_mcp_tools.py
+from config.logger import setup_logger
 from core.mcp.tools.get_schema import get_schema
 from core.mcp.tools.list_tables import list_tables
 from core.mcp.tools.describe_table import describe_table
 from core.mcp.tools.get_table_data import get_table_data
 from core.mcp.tools.validate_query import validate_query
+from core.mcp.tools.execute_query import execute_query
 
-# DB config
+logger = setup_logger("TestMCP")
+
 db_config = {
     "host": "localhost",
     "user": "root",
@@ -13,25 +16,38 @@ db_config = {
     "database": "company_db"
 }
 
-# 1. Test get_schema
-tables = get_schema(db_config)
-print("Tables:", list_tables(tables))
+def run_tests():
+    logger.info("===== Running MCP Tools Test =====")
 
-# 2. Test describe_table (first table)
-if tables:
+    # Schema
+    schema = get_schema(db_config)
+    logger.info(f"Schema fetched: {schema}")
+
+    # Tables
+    tables = list_tables(schema)
+    logger.info(f"Tables: {tables}")
+
+    # Describe
     desc = describe_table(tables[0], db_config)
-    print(f"Description of {tables[0]}:", desc)
+    logger.info(f"Description of {tables[0]}: {desc}")
 
-# 3. Test get_table_data (first table)
-if tables:
-    data = get_table_data(tables[0], db_config)
-    print(f"Data from {tables[0]}:", data)
+    # Data
+    data = get_table_data(tables[0], db_config, limit=5)
+    logger.info(f"Data from {tables[0]} (limit 5): {data}")
 
-# 4. Test execute_query
-query = "SELECT * FROM employees LIMIT 5;"
-valid, msg = validate_query(query)
-if valid:
+    # Validate
+    query = "SELECT * FROM employees LIMIT 5;"
+    valid, msg = validate_query(query)
+    if valid:
+        logger.info("Query validation passed")
+    else:
+        logger.error(f"Validation failed: {msg}")
+
+    # Execute
     result = execute_query(query, db_config)
-    print("Query Result:", result)
-else:
-    print("Invalid query:", msg)
+    logger.info(f"Query Result: {result}")
+
+    logger.info("===== Test Finished =====")
+
+if __name__ == "__main__":
+    run_tests()

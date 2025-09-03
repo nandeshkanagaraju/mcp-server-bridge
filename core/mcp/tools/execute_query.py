@@ -1,32 +1,23 @@
-# execute_query.py
-from fastmcp import FastMCP  # Make sure FastMCP is installed
 import mysql.connector
+from core.mcp.logging_config import setup_logging
 
-def execute_query(query: str, db_config: dict):
-    """
-    Executes a SQL query using MySQL and returns results as a list of dictionaries.
-    
-    Args:
-        query (str): SQL query to execute
-        db_config (dict): Database configuration dictionary with keys:
-                          host, user, password, database
-                          
-    Returns:
-        list[dict]: Query results
-    """
+logger = setup_logging("ExecuteQuery")
+
+def execute_query(query: str, db_config: dict) -> dict:
+    """Executes a SQL query using MySQL and returns results."""
+    logger.info(f"Executing query: {query}")
     try:
-        conn = mysql.connector.connect(
-            host=db_config.get("host", "localhost"),
-            user=db_config.get("user", "root"),
-            password=db_config.get("password", ""),
-            database=db_config.get("database", "")
-        )
+        conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(dictionary=True)
         cursor.execute(query)
         results = cursor.fetchall()
         cursor.close()
         conn.close()
-        return results
+
+        logger.info(f"Query successful. Returned {len(results)} rows.")
+        return {"status": "success", "data": results}
+
     except mysql.connector.Error as e:
-        print(f"Database error: {e}")
-        return []
+        error_msg = f"Database error: {e}"
+        logger.error(error_msg)
+        return {"status": "error", "message": error_msg}
