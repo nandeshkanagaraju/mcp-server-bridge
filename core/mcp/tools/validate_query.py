@@ -1,12 +1,13 @@
-from core.mcp.logging_config import setup_logging
-
-logger = setup_logging("ValidateQuery")
+from config.logger import logger
 
 def validate_query(query: str):
-    """Basic validation: only SELECT queries are allowed."""
+    """
+    Basic validation: check if query is a SELECT statement
+    """
     logger.info(f"Validating query: {query}")
     if not query.strip().lower().startswith("select"):
-        logger.warning("Query validation failed - only SELECT allowed")
-        return False, "Only SELECT queries are allowed."
+        msg = "Only SELECT queries are allowed."
+        logger.warning(f"Query validation failed: {msg}")
+        return False, msg
     logger.info("Query validation passed")
     return True, ""
