@@ -1,8 +1,7 @@
-from core.mcp.logging_config import setup_logging
+from config.logger import logger
+from .get_schema import run_get_schema
 
-logger = setup_logging("ListTables")
-
-def list_tables(tables: list):
-    """Return list of tables from schema."""
+def run_list_tables():
+    tables = run_get_schema()
     logger.info(f"Listing tables: {tables}")
     return tables

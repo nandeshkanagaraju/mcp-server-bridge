@@ -1,28 +1,21 @@
-# config/logger.py
 import logging
 
-def setup_logger(name: str) -> logging.Logger:
-    """
-    Creates a logger with both console and file handlers.
-    """
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+logger = logging.getLogger("MCPServer")
+logger.setLevel(logging.INFO)
 
-    # Avoid duplicate handlers if logger is reused
-    if not logger.handlers:
-        formatter = logging.Formatter(
-            "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
+# Console handler
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
 
-        # File handler
-        file_handler = logging.FileHandler("mcp_server.log")
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+# File handler
+fh = logging.FileHandler("mcp_server.log")
+fh.setLevel(logging.INFO)
 
-        # Console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+# Formatter
+formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+ch.setFormatter(formatter)
+fh.setFormatter(formatter)
 
-    return logger
+# Add handlers
+logger.addHandler(ch)
+logger.addHandler(fh)

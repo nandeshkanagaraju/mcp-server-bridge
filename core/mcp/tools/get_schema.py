@@ -1,21 +1,15 @@
-import mysql.connector
-from core.mcp.logging_config import setup_logging
+from config.logger import logger
+from .common_config import db_config
+from .execute_query import run_execute_query
 
-logger = setup_logging("GetSchema")
-
-def get_schema(db_config: dict):
-    """Fetch list of tables in the database."""
-    logger.info("Fetching schema (list of tables)...")
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
-        cursor.execute("SHOW TABLES;")
-        tables = [row[0] for row in cursor.fetchall()]
-        cursor.close()
-        conn.close()
-
+def run_get_schema():
+    logger.info("Fetching database schema...")
+    query = "SHOW TABLES;"
+    result = run_execute_query(query)
+    if result["status"] == "success":
+        tables = [list(row.values())[0] for row in result["data"]]
         logger.info(f"Schema fetched: {tables}")
         return tables
-    except mysql.connector.Error as e:
-        logger.error(f"Database error while fetching schema: {e}")
+    else:
+        logger.error("Failed to fetch schema")
         return []

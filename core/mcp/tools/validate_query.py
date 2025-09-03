@@ -1,13 +1,10 @@
 from config.logger import logger
 
-def validate_query(query: str):
-    """
-    Basic validation: check if query is a SELECT statement
-    """
+def run_validate_query(query: str):
     logger.info(f"Validating query: {query}")
-    if not query.strip().lower().startswith("select"):
-        msg = "Only SELECT queries are allowed."
-        logger.warning(f"Query validation failed: {msg}")
-        return False, msg
-    logger.info("Query validation passed")
-    return True, ""
+    if query.strip().lower().startswith(("select", "show")):
+        logger.info("Query validation passed")
+        return True
+    else:
+        logger.warning("Query validation failed")
+        return False
