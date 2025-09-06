@@ -52,4 +52,7 @@ logs/
 # Coverage
 .coverage
 htmlcov/
+
+# Secrets
+.env
 EOF
