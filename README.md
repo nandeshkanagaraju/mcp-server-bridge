@@ -1,374 +1,237 @@
-# Universal MCP
+# Universal MCP: An Intelligent Database Gateway
 
-A universal Model Context Protocol (MCP) server that provides secure database access and schema introspection via HTTP+SSE transport. Designed as a pure data access layer that works with intelligent MCP clients handling NLP-to-SQL conversion.
+A universal Model Context Protocol (MCP) server that provides secure, intelligent database access. It supports both direct SQL execution and natural language queries (Text-to-SQL) powered by Large Language Models (LLMs).
 
 ## 🏗️ Architecture
 
+The server architecture now integrates the intelligence layer directly, offering a hybrid approach to data access.
+
 ```
-┌─────────────────┐    MCP Protocol     ┌──────────────────────┐
-│                 │    (HTTP+SSE)       │                      │
-│   MCP Clients   │◄──────────────────►│  Universal MCP       │
-│                 │                     │     Server           │
-│ • Claude Desktop│                     │                      │
-│ • VSCode        │                     │ • Schema Reader      │
-│ • Custom Apps   │                     │ • Query Executor     │
-│ • Web Clients   │                     │ • Security Layer     │
-└─────────────────┘                     │ • Multi-DB Support   │
-                                        └──────────┬───────────┘
-┌─────────────────┐                                │
-│  Intelligence   │                                │
-│                 │                                ▼
-│ • NLP Processing│                     ┌──────────────────────┐
-│ • LLM Integration│                     │                      │
-│ • Context Memory│                     │    Databases         │
-│ • SQL Generation│                     │                      │
-└─────────────────┘                     │ • PostgreSQL         │
-                                        │ • MySQL              │
-    (Client Side)                       │ • SQLite             │
-                                        │ • Oracle (future)    │
-                                        └──────────────────────┘
+┌─────────────────┐    MCP Protocol     ┌──────────────────────────────────┐
+│                 │    (HTTP+SSE)       │                                  │
+│   MCP Clients   │◄──────────────────►│     Universal MCP Server         │
+│ (VSCode, etc.)  │                     │                                  │
+└─────────────────┘                     │ ┌──────────────────────────────┐ │
+                                        │ │       Intelligence           │ │
+┌─────────────────┐    REST API         │ │                                │ │
+│                 │                     │ │ • NLP-to-SQL (via REST API)  │ │
+│  REST Clients   │◄──────────────────►│ │ • LLM Integration (ChatGPT)  │ │
+│ (Web Apps, etc.)│                     │ │ • Conversation Memory        │ │
+└─────────────────┘                     │ │ • SQL Generation & Validation│ │
+                                        │ └──────────────────────────────┘ │
+                                        │ ┌──────────────────────────────┐ │
+                                        │ │    Core Services & Tools     │ │
+                                        │ │                              │ │
+                                        │ │ • Schema Management          │ │
+                                        │ │ • Secure Query Executor      │ │
+                                        │ │ • Multi-DB Support           │ │
+                                        │ └───────────────┬──────────────┘ │
+                                        └─────────────────│────────────────┘
+                                                          │
+                                                          ▼
+                                        ┌──────────────────────────────────┐
+                                        │         Physical Databases       │
+                                        │ (PostgreSQL, MySQL, SQLite, etc.)│
+                                        └──────────────────────────────────┘
 ```
 
 ## 🎯 Purpose
 
-Universal MCP serves as a **universal database gateway** that:
-- Provides secure, validated SQL execution via MCP protocol
-- Generates database schema YAML for MCP tool configuration
-- Supports multiple database types through adapter pattern
-- Streams large query results via HTTP+SSE transport
-- Handles security, validation, and connection management
+Universal MCP serves as a hybrid database gateway that:
 
-**Note**: This server does NOT include NLP/LLM processing. Clients are responsible for natural language understanding and SQL generation.
+*   Provides a secure REST API for converting natural language questions into SQL queries.
+*   Manages conversation history for contextual understanding.
+*   Provides secure, validated SQL execution via the traditional MCP protocol.
+*   Generates database schema YAML for tool configuration and LLM context.
+*   Supports multiple database types through a flexible adapter pattern.
 
-## 📁 Project Structure
+## ✨ New Feature: Natural Language Queries (Text-to-SQL)
 
-```
-universal-mcp/
-├── README.md                          # This file
-├── requirements.txt                   # Python dependencies
-├── docker-compose.yml               # Container orchestration
-├── .env.example                      # Environment configuration template
-├── .gitignore                        # Git ignore rules
-│
-├── config/                           # Configuration Management
-│   ├── __init__.py
-│   ├── settings.py                   # App settings and environment variables
-│   ├── database.py                   # Database connection configurations
-│   └── mcp_config.py                 # MCP server and transport settings
-│
-├── core/                             # Core Business Logic
-│   ├── __init__.py
-│   ├── database/                     # Database Layer
-│   │   ├── __init__.py
-│   │   ├── connection_manager.py     # Connection pooling and management
-│   │   ├── query_executor.py         # Safe SQL execution with validation
-│   │   ├── health_monitor.py         # Database health monitoring
-│   │   └── adapters/                 # Database-specific implementations
-│   │       ├── __init__.py
-│   │       ├── base_adapter.py       # Abstract base adapter
-│   │       ├── postgresql_adapter.py # PostgreSQL implementation
-│   │       ├── mysql_adapter.py      # MySQL implementation
-│   │       └── sqlite_adapter.py     # SQLite implementation
-│   │
-│   ├── schema/                       # Schema Management
-│   │   ├── __init__.py
-│   │   ├── schema_reader.py          # Extract database schema metadata
-│   │   ├── metadata_extractor.py     # Parse table/column information
-│   │   ├── yaml_generator.py         # Generate YAML for FastMCP
-│   │   └── schema_cache.py           # Cache schema for performance
-│   │
-│   ├── security/                     # Security Layer
-│   │   ├── __init__.py
-│   │   ├── query_validator.py        # SQL injection prevention
-│   │   ├── sql_sanitizer.py          # Query sanitization
-│   │   └── rate_limiter.py           # Rate limiting implementation
-│   │
-│   └── mcp/                          # MCP Protocol Implementation
-│       ├── __init__.py
-│       ├── server.py                 # Main MCP server
-│       ├── transport/                # Transport Layer
-│       │   ├── __init__.py
-│       │   ├── http_sse_transport.py # HTTP+SSE transport
-│       │   └── stdio_transport.py    # STDIO transport (dev)
-│       ├── handlers/                 # Protocol Handlers
-│       │   ├── __init__.py
-│       │   ├── protocol_handler.py   # MCP protocol handling
-│       │   └── message_handler.py    # Message processing
-│       ├── tools/                    # MCP Tools
-│       │   ├── __init__.py
-│       │   ├── execute_query.py      # Execute SQL queries
-│       │   ├── get_schema.py         # Retrieve schema information
-│       │   ├── list_tables.py        # List available tables
-│       │   ├── describe_table.py     # Table structure details
-│       │   ├── get_table_data.py     # Sample table data
-│       │   └── validate_query.py     # Query validation
-│       └── resources/                # MCP Resources
-│           ├── __init__.py
-│           └── schema_resources.py   # Schema resource management
-│
-├── api/                              # Minimal Health API
-│   ├── __init__.py
-│   ├── main.py                       # FastAPI app (health only)
-│   └── health.py                     # Health check endpoints
-│
-├── services/                         # Business Logic Services
-│   ├── __init__.py
-│   ├── schema_service.py             # Schema extraction orchestration
-│   ├── query_service.py              # Query execution business logic
-│   └── database_service.py           # Database operations coordination
-│
-├── observability/                    # Monitoring & Logging
-│   ├── __init__.py
-│   ├── monitoring.py                 # System monitoring setup
-│   ├── metrics.py                    # Custom metrics collection
-│   ├── health_checks.py              # Health check implementations
-│   └── logging_config.py             # Structured logging setup
-│
-├── storage/                          # Caching & Storage
-│   ├── __init__.py
-│   ├── cache/                        # Caching Layer
-│   │   ├── __init__.py
-│   │   ├── redis_cache.py            # Redis caching implementation
-│   │   └── memory_cache.py           # In-memory caching
-│   └── session/                      # Session Management
-│       ├── __init__.py
-│       └── context_store.py          # MCP session storage
-│
-├── schemas/                          # Schema Files
-│   ├── generated/                    # Auto-generated YAML schemas
-│   │   └── .gitkeep
-│   └── templates/                    # Schema templates
-│       └── schema_template.yaml      # Base schema template
-│
-├── tests/                            # Test Suite
-│   ├── __init__.py
-│   ├── conftest.py                   # Pytest configuration
-│   ├── unit/                         # Unit Tests
-│   │   ├── __init__.py
-│   │   ├── test_schema_reader.py     # Schema reading tests
-│   │   ├── test_query_executor.py    # Query execution tests
-│   │   ├── test_database_adapters.py # Database adapter tests
-│   │   └── test_mcp_tools.py         # MCP tools tests
-│   ├── integration/                  # Integration Tests
-│   │   ├── __init__.py
-│   │   ├── test_mcp_server.py        # MCP server integration
-│   │   └── test_database_connections.py # Database integration
-│   └── fixtures/                     # Test Data
-│       ├── sample_schema.yaml        # Sample schema files
-│       └── test_database.sql         # Test database setup
-│
-├── scripts/                          # Utility Scripts
-│   ├── __init__.py
-│   ├── setup_database.py             # Database initialization
-│   ├── generate_schema.py            # Schema YAML generation
-│   ├── start_mcp_server.py           # MCP server startup
-│   └── test_mcp_connection.py        # MCP connection testing
-│
-├── docs/                             # Documentation
-│   ├── mcp/
-│   │   └── protocol_docs.md          # MCP protocol documentation
-│   ├── deployment/
-│   │   └── docker_setup.md           # Docker deployment guide
-│   └── examples/
-│       ├── sample_queries.md         # Example queries and usage
-│       └── integration_examples.py   # Integration code examples
-│
-└── deployment/                       # Deployment Configuration
-    ├── docker/                       # Docker Configuration
-    │   ├── Dockerfile                # Production Dockerfile
-    │   ├── Dockerfile.dev             # Development Dockerfile
-    │   └── nginx.conf                # Nginx configuration
-    ├── k8s/                          # Kubernetes Manifests
-    │   ├── deployment.yaml           # K8s deployment
-    │   ├── service.yaml              # K8s service
-    │   └── configmap.yaml            # K8s configuration
-    └── scripts/                      # Deployment Scripts
-        ├── deploy.sh                 # Deployment automation
-        └── health_check.sh           # Health check script
+The server now includes a powerful REST API endpoint that leverages ChatGPT to translate plain English into SQL.
+
+*   **Conversational Memory:** Use a `session_id` to ask follow-up questions. The server remembers the context of your conversation.
+*   **Secure by Design:** All LLM-generated queries are passed through a security validator that ensures only safe `SELECT` statements are executed.
+*   **Easy Integration:** Any client that can make an HTTP request can now interact with your database using natural language.
+
+### Example Usage
+
+```bash
+# Ask an initial question
+curl -X POST "http://127.0.0.1:8000/api/v1/query/natural-language" \
+-H "Content-Type: application/json" \
+-d '{
+    "question": "Show me the top 3 highest paid employees",
+    "session_id": "my_chat_session_1"
+}'
+
+# Ask a follow-up question in the same session
+curl -X POST "http://127.0.0.1:8000/api/v1/query/natural-language" \
+-H "Content-Type: application/json" \
+-d '{
+    "question": "of those, who was hired most recently?",
+    "session_id": "my_chat_session_1"
+}'
 ```
 
 ## 🚀 Quick Start
 
 ### 1. Setup Environment
+
 ```bash
 git clone <repository-url>
 cd universal-mcp
 
-# Create virtual environment
+# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Configure Database
+### 2. Configure Environment
+
 ```bash
 # Copy environment template
 cp .env.example .env
 
-# Edit configuration
-nano .env  # Add your database credentials
+# Edit .env and add your database credentials and OpenAI API key
+nano .env
 ```
 
-### 3. Generate Database Schema
+**Important:** You must add your `OPENAI_API_KEY` to the `.env` file.
+
+### 3. Start the Server
+
 ```bash
-# Generate YAML schema for MCP tools
-python scripts/generate_schema.py --database your_database_name
+# The server provides both the MCP tools and the REST API
+uvicorn api.main:app --reload --port 8000
 ```
 
-### 4. Start MCP Server
-```bash
-# Start with HTTP+SSE transport
-python scripts/start_mcp_server.py --transport http --port 8080
+## 🔧 Available Tools & API
 
-# Optional: Start health API
-uvicorn api.main:app --port 8081
-```
+### Natural Language API
 
-### 5. Test Connection
-```bash
-# Test MCP connection
-python scripts/test_mcp_connection.py
-```
+| Endpoint                       | Method | Description                                                |
+| :----------------------------- | :----- | :--------------------------------------------------------- |
+| `/api/v1/query/natural-language` | `POST`   | Converts a natural language question to a SQL query and executes it. |
 
-## 🔧 MCP Tools Available
+### Traditional MCP Tools
 
-| Tool | Description | Usage |
-|------|-------------|-------|
-| `execute_query` | Execute validated SQL queries safely | Primary query execution |
-| `get_schema` | Retrieve complete database schema | Schema introspection |
-| `list_tables` | Get list of available tables | Table discovery |
-| `describe_table` | Get detailed table structure | Table metadata |
-| `get_table_data` | Retrieve sample data from tables | Data exploration |
-| `validate_query` | Validate SQL syntax and security | Query validation |
+| Tool             | Description                                   |
+| :--------------- | :-------------------------------------------- |
+| `execute_query`    | Execute validated SQL queries safely.         |
+| `get_schema`       | Retrieve complete database schema.            |
+| `list_tables`      | Get list of available tables.                 |
+| `describe_table`   | Get detailed table structure.                 |
+| `get_table_data`   | Retrieve paginated data from tables.          |
+| `validate_query`   | Validate SQL syntax and security.             |
 
----
+### Using Pagination
 
-## 📝 Logging & Observability Enhancements
+The `get_table_data` tool supports pagination to handle large tables efficiently. You can use the `page` and `page_size` parameters to request specific chunks of data.
 
-The `logging-tools` feature introduces **centralized structured logging** for all MCP tools and server operations, providing:
-
-- **Automatic logging** for every tool execution (`execute_query`, `get_schema`, `list_tables`, `describe_table`, `get_table_data`, `validate_query`).
-- **Info, warning, and error levels** to track success, failures, and exceptions.
-- **Query and schema logging** to trace SQL statements and database interactions.
-- **Consistent log format** with timestamps, tool names, and execution results.
-- **Easy debugging**: Quickly identify which tool or query caused issues.
-- **Optional logging test script**: `scripts/test_logging_all.py` validates all tools and generates example logs.
-
-### Example Log Output
-2025-09-04 02:31:35,418 | INFO | MCPServer | Executing query: SELECT * FROM employees LIMIT 3;
-2025-09-04 02:31:35,522 | INFO | MCPServer | Query successful. Returned 3 rows.
-2025-09-04 02:31:35,545 | INFO | MCPServer | Schema fetched: ['assignments', 'departments', 'employees', 'projects']
-
-
-> Logs are stored in a centralized manner and can be configured via `observability/logging_config.py`.
-
----
-
-## 🔌 MCP Resources
-
-| Resource | Description | URI Pattern |
-|----------|-------------|-------------|
-| `schema` | Database schema information | `schema://database/{table_name}` |
-| `table` | Table metadata and structure | `table://database/{table_name}` |
-| `connection` | Database connection status | `connection://database/status` |
-
-## 🌐 Client Integration
-
-### Connection Example
 ```python
-# MCP client connection
-import mcp
-
-client = mcp.Client(transport="http://localhost:8080")
-await client.connect()
-
-# Execute query via MCP
-result = await client.call_tool("execute_query", {
-    "query": "SELECT * FROM employees LIMIT 5",
-    "database": "company_db"
-})
+# This is a hypothetical client call to the tool
+result = await run_get_table_data(
+    table_name="employees",
+    page=2,         # Fetch the second page
+    page_size=50    # With 50 rows per page
+)
 ```
-
-### Supported Transports
-- **HTTP+SSE** (Production): `http://localhost:8080`
-- **STDIO** (Development): Direct process communication
-
-## 🔒 Security Features
-
-- **SQL Injection Prevention**: Parameterized query validation
-- **Query Sanitization**: Clean and validate SQL statements
-- **Rate Limiting**: Prevent abuse and resource exhaustion
-- **Connection Security**: Secure database credential management
-- **Query Timeouts**: Prevent long-running queries
-- **Whitelist/Blacklist**: Control allowed SQL operations
-
-## 🗄️ Supported Databases
-
-| Database | Status | Adapter | Notes |
-|----------|---------|---------|-------|
-| PostgreSQL | ✅ Supported | `postgresql_adapter.py` | Full feature support |
-| MySQL | ✅ Supported | `mysql_adapter.py` | Full feature support |
-| SQLite | ✅ Supported | `sqlite_adapter.py` | Local development |
-| Oracle | 🚧 Planned | - | Future implementation |
-| SQL Server | 🚧 Planned | - | Future implementation |
 
 ## 📊 Monitoring & Observability
 
-- **Health Checks**: Database connectivity and server status
-- **Metrics**: Query execution times, connection pool status
-- **Logging**: Structured logging with correlation IDs
-- **Monitoring**: Prometheus metrics (optional)
+### How to Access Logs
+
+There are two primary ways to see the system's logs:
+
+1.  **Real-time Console Output (Live View)** All logs are streamed directly to the terminal where the server is running. This is the best way to watch requests as they happen.
+2.  **Persistent Log File (For Review)** The server also writes all logs to a file named `mcp_server.log` in the root of the project directory. This is useful for reviewing past events. You can access it with standard terminal commands:
+
+```bash
+# View the entire log file
+cat mcp_server.log
+
+# View the file page by page (good for long files)
+less mcp_server.log
+
+# Watch the file for new logs in real-time
+tail -f mcp_server.log
+```
+
+### Log Configuration
+
+You can control the verbosity of the logs by changing the `LOG_LEVEL` variable in your `.env` file. Supported levels include `DEBUG`, `INFO`, `WARNING`, and `ERROR`.
+
+```
+# .env file
+LOG_LEVEL="INFO" # Change to "DEBUG" for more detailed output
+```
+
+## 📁 Project Structure (Highlights)
+
+```
+universal-mcp/
+├── mcp_server.log               # Main log file
+├── config/
+│   └── settings.py              # Loads configs, including OPENAI_API_KEY
+├── core/
+│   ├── security/
+│   │   └── query_validator.py   # Includes security check for LLM queries
+│   └── mcp/
+│       └── tools/
+│           ├── natural_language_query.py # New tool for orchestrating NLQ
+│           └── ...
+├── api/
+│   ├── main.py                  # Main FastAPI application
+│   └── query_routes.py          # Defines the /query/natural-language endpoint
+├── services/
+│   ├── ll_service.py           # Handles all interaction with OpenAI API
+│   ├── query_service.py         # Business logic for queries
+│   └── schema_service.py        # Generates schema for LLM context
+└── ...
+```
+
+## 🔒 Security Features
+
+*   **LLM Query Validation:** All generated SQL is validated to ensure it is `SELECT`-only and contains no malicious chained commands.
+*   **SQL Injection Prevention:** Parameterized query validation for direct SQL execution.
+*   **Query Sanitization:** Clean and validate SQL statements.
+*   **Rate Limiting:** Prevent abuse and resource exhaustion.
+*   **Secure Credential Management:** Keys and passwords loaded from `.env`.
+
+## 🗄️ Supported Databases
+
+| Database   | Status       | Adapter                |
+| :--------- | :----------- | :--------------------- |
+| PostgreSQL | ✅ Supported | `postgresql_adapter.py`  |
+| MySQL      | ✅ Supported | `mysql_adapter.py`       |
+| SQLite     | ✅ Supported | `sqlite_adapter.py`      |
+| Oracle     | 🚧 Planned   | -                      |
+| SQL Server | 🚧 Planned   | -                      |
 
 ## 🐳 Deployment
 
 ### Docker
+
 ```bash
 # Build and run
 docker-compose up -d
 
 # Health check
-curl http://localhost:8081/health
-```
-
-### Kubernetes
-```bash
-# Deploy to K8s
-kubectl apply -f deployment/k8s/
+curl http://localhost:8000/health
 ```
 
 ## 🧪 Development
 
 ### Running Tests
+
 ```bash
 # Unit tests
 pytest tests/unit/
 
 # Integration tests
 pytest tests/integration/
-
-# All tests with coverage
-pytest --cov=core --cov=services
 ```
-
-### Code Quality
-```bash
-# Format code
-black .
-isort .
-
-# Type checking
-mypy core/ services/
-
-# Linting
-flake8 core/ services/
-```
-
-## 📚 Documentation
-
-- [MCP Protocol Documentation](docs/mcp/protocol_docs.md)
-- [Docker Deployment Guide](docs/deployment/docker_setup.md)
-- [Integration Examples](docs/examples/integration_examples.py)
-- [Sample Queries](docs/examples/sample_queries.md)
 
