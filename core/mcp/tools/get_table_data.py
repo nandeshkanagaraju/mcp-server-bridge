@@ -1,12 +1,28 @@
 from config.logger import logger
-from .execute_query import run_execute_query
+from services.query_service import get_paginated_table_data
 
-def run_get_table_data(table_name: str, limit: int = 10):
-    logger.info(f"Fetching data from {table_name}, limit={limit}")
-    query = f"SELECT * FROM {table_name} LIMIT {limit};"
-    result = run_execute_query(query)
+async def run_get_table_data(table_name: str, page: int = 1, page_size: int = 100):
+    """
+    MCP tool to fetch paginated data from a specific table.
+
+    Args:
+        table_name: The name of the table.
+        page: The page number to fetch.
+        page_size: The number of rows per page.
+    """
+    logger.info(f"Tool 'get_table_data' called for {table_name} with page={page}, page_size={page_size}")
+
+    # Call the service layer to handle the request
+    result = await get_paginated_table_data(
+        table_name=table_name,
+        page=page,
+        page_size=page_size
+    )
+
     if result["status"] == "success":
-        logger.info(f"Fetched {len(result['data'])} rows from {table_name}")
+        logger.info(f"Successfully fetched {len(result['data'])} rows from {table_name} for page {page}")
+        # The tool can return the full result dict or just the data
+        return result 
     else:
-        logger.error(f"Failed to fetch data from {table_name}")
-    return result["data"] if result["status"] == "success" else []
+        logger.error(f"Failed to fetch data from {table_name}: {result.get('message')}")
+        return result
