@@ -1,0 +1,10 @@
+[
+  {
+    "role": "user",
+    "content": "Give me first 5 employees"
+  },
+  {
+    "role": "assistant",
+    "content": "I generated the following SQL:\n```sql\nSELECT * FROM employees ORDER BY emp_id LIMIT 5;\n```\nAnd here is a summary of the result:\nThe previous query returned 5 rows. Here is a sample of the data (up to 2 rows): [{\"emp_id\": 1, \"first_name\": \"Michelle\", \"last_name\": \"James\", \"email\": \"michelle.james0@gmail.com\", \"phone_number\": \"(615)438-7918\", \"hire_date\": \"2021-02-18\", \"job_id\": \"Herbalist\", \"salary\": \"79049.30\", \"dept_id\": 10}, {\"emp_id\": 2, \"first_name\": \"Rebecca\", \"last_name\": \"Long\", \"email\": \"rebecca.long1@yahoo.com\", \"phone_number\": \"319-813-5393x679\", \"hire_date\": \"2025-01-01\", \"job_id\": \"Pilot, airline\", \"salary\": \"39241.99\", \"dept_id\": 2}]"
+  }
+]
