@@ -1,10 +1,10 @@
 # Universal MCP: An Intelligent Database Gateway
 
-A universal Model Context Protocol (MCP) server that provides secure, intelligent database access. It supports both direct SQL execution and natural language queries (Text-to-SQL) powered by Large Language Models (LLMs).
+Universal MCP is an intelligent database gateway designed to provide secure and intelligent access to various databases. It supports both direct SQL execution via the MCP protocol and natural language queries (Text-to-SQL) through a REST API, leveraging OpenAI's GPT models for advanced natural language processing capabilities.
 
 ## 🏗️ Architecture
 
-The server architecture now integrates the intelligence layer directly, offering a hybrid approach to data access.
+The server architecture integrates an intelligence layer directly, offering a hybrid approach to data access. This design allows for flexible interaction with physical databases while incorporating advanced AI functionalities.
 
 ```
 ┌─────────────────┐    MCP Protocol     ┌──────────────────────────────────┐
@@ -15,7 +15,7 @@ The server architecture now integrates the intelligence layer directly, offering
                                         │ │       Intelligence           │ │
 ┌─────────────────┐    REST API         │ │                                │ │
 │                 │                     │ │ • NLP-to-SQL (via REST API)  │ │
-│  REST Clients   │◄──────────────────►│ │ • LLM Integration (ChatGPT)  │ │
+│  REST Clients   │◄───────────────────►│ │ • LLM Integration (ChatGPT)  │ │
 │ (Web Apps, etc.)│                     │ │ • Conversation Memory        │ │
 └─────────────────┘                     │ │ • SQL Generation & Validation│ │
                                         │ └──────────────────────────────┘ │
@@ -37,45 +37,32 @@ The server architecture now integrates the intelligence layer directly, offering
 
 ## 🎯 Purpose
 
-Universal MCP serves as a hybrid database gateway that:
+Universal MCP functions as a hybrid database gateway with the following core purposes:
 
-*   Provides a secure REST API for converting natural language questions into SQL queries.
-*   Manages conversation history for contextual understanding.
-*   Provides secure, validated SQL execution via the traditional MCP protocol.
-*   Generates database schema YAML for tool configuration and LLM context.
-*   Supports multiple database types through a flexible adapter pattern.
+*   **Secure REST API**: Provides an interface for converting natural language questions into SQL queries.
+*   **Conversation Management**: Manages conversation history to support contextual, multi-turn questions.
+*   **Secure SQL Execution**: Offers secure and validated SQL execution via the traditional MCP protocol.
+*   **Schema Generation**: Generates database schema YAML for tool configuration and LLM context.
+*   **Multi-Database Support**: Supports various database types through a flexible adapter pattern.
 
 ## ✨ New Feature: Natural Language Queries (Text-to-SQL)
 
-The server now includes a powerful REST API endpoint that leverages ChatGPT to translate plain English into SQL.
+The server now incorporates a robust REST API and an interactive terminal client that utilizes ChatGPT to translate natural language into SQL queries. Key aspects of this feature include:
 
-*   **Conversational Memory:** Use a `session_id` to ask follow-up questions. The server remembers the context of your conversation.
-*   **Secure by Design:** All LLM-generated queries are passed through a security validator that ensures only safe `SELECT` statements are executed.
-*   **Easy Integration:** Any client that can make an HTTP request can now interact with your database using natural language.
+*   **Conversational Memory**: The system maintains conversation context using a persistent file-based session store, enabling users to ask follow-up questions.
+*   **Secure by Design**: All LLM-generated queries undergo a security validation process, ensuring that only safe `SELECT` statements are executed.
+*   **Interactive Terminal Client**: A user-friendly terminal interface (`scripts/chat.py`) facilitates full conversational interaction with the database.
 
-### Example Usage
+## 🚀 Quick Start (Local Setup)
 
-```bash
-# Ask an initial question
-curl -X POST "http://127.0.0.1:8000/api/v1/query/natural-language" \
--H "Content-Type: application/json" \
--d '{
-    "question": "Show me the top 3 highest paid employees",
-    "session_id": "my_chat_session_1"
-}'
+This guide outlines the steps to run the application directly on a local machine (macOS/Linux).
 
-# Ask a follow-up question in the same session
-curl -X POST "http://127.0.0.1:8000/api/v1/query/natural-language" \
--H "Content-Type: application/json" \
--d '{
-    "question": "of those, who was hired most recently?",
-    "session_id": "my_chat_session_1"
-}'
-```
+### 1. Prerequisites
 
-## 🚀 Quick Start
+*   Python 3.11+
+*   A running local MySQL server.
 
-### 1. Setup Environment
+### 2. Setup Environment
 
 ```bash
 git clone <repository-url>
@@ -89,149 +76,130 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 3. Configure Environment
 
 ```bash
 # Copy environment template
 cp .env.example .env
 
-# Edit .env and add your database credentials and OpenAI API key
+# Edit .env and add your local database credentials and OpenAI API key
 nano .env
 ```
 
-**Important:** You must add your `OPENAI_API_KEY` to the `.env` file.
+**Important**: Ensure `OPENAI_API_KEY` is added and `DB_HOST`, `DB_USER`, and `DB_PASSWORD` match your local MySQL setup.
 
-### 3. Start the Server
+### 4. Initialize the Database
+
+This script creates necessary tables and populates them with sample data in your local MySQL database.
 
 ```bash
-# The server provides both the MCP tools and the REST API
+python scripts/setup_database.py
+```
+
+### 5. Start the Server
+
+This command starts the FastAPI server, which provides the REST API.
+
+```bash
+# Leave this terminal running
 uvicorn api.main:app --reload --port 8000
 ```
 
-## 🔧 Available Tools & API
+### 6. Chat with Your Database
+
+Open a new terminal window and start the interactive chat client.
+
+```bash
+# Make sure your virtual environment is activated
+source venv/bin/activate
+
+# Run the chat script
+python scripts/chat.py
+```
+
+## 🔧 Available Tools & APIs
 
 ### Natural Language API
 
-| Endpoint                       | Method | Description                                                |
-| :----------------------------- | :----- | :--------------------------------------------------------- |
+| Endpoint                     | Method | Description                                                    |
+| :--------------------------- | :----- | :------------------------------------------------------------- |
 | `/api/v1/query/natural-language` | `POST`   | Converts a natural language question to a SQL query and executes it. |
 
 ### Traditional MCP Tools
 
-| Tool             | Description                                   |
-| :--------------- | :-------------------------------------------- |
-| `execute_query`    | Execute validated SQL queries safely.         |
-| `get_schema`       | Retrieve complete database schema.            |
-| `list_tables`      | Get list of available tables.                 |
-| `describe_table`   | Get detailed table structure.                 |
-| `get_table_data`   | Retrieve paginated data from tables.          |
-| `validate_query`   | Validate SQL syntax and security.             |
+| Tool              | Description                                        |
+| :---------------- | :------------------------------------------------- |
+| `execute_query`     | Execute validated SQL queries safely.              |
+| `get_schema`        | Retrieve complete database schema.                 |
+| `list_tables`       | Get list of available tables.                      |
+| `describe_table`    | Get detailed table structure.                      |
+| `get_table_data`    | Retrieve paginated data from tables.               |
+| `validate_query`    | Validate SQL syntax and security.                  |
 
-### Using Pagination
+#### Using Pagination
 
-The `get_table_data` tool supports pagination to handle large tables efficiently. You can use the `page` and `page_size` parameters to request specific chunks of data.
-
-```python
-# This is a hypothetical client call to the tool
-result = await run_get_table_data(
-    table_name="employees",
-    page=2,         # Fetch the second page
-    page_size=50    # With 50 rows per page
-)
-```
+The `get_table_data` tool supports pagination for efficient handling of large tables. Use the `page` and `page_size` parameters to request specific data chunks.
 
 ## 📊 Monitoring & Observability
 
 ### How to Access Logs
 
-There are two primary ways to see the system's logs:
+Logs are crucial for debugging and can be accessed in two ways:
 
-1.  **Real-time Console Output (Live View)** All logs are streamed directly to the terminal where the server is running. This is the best way to watch requests as they happen.
-2.  **Persistent Log File (For Review)** The server also writes all logs to a file named `mcp_server.log` in the root of the project directory. This is useful for reviewing past events. You can access it with standard terminal commands:
+*   **Real-time Console Output**: All logs are streamed directly to the terminal where the `uvicorn` server is running.
+*   **Persistent Log File**: The server also writes all logs to `mcp_server.log` in the project's root directory.
 
 ```bash
-# View the entire log file
-cat mcp_server.log
-
-# View the file page by page (good for long files)
-less mcp_server.log
-
-# Watch the file for new logs in real-time
+# Watch the log file for new entries in real-time
 tail -f mcp_server.log
 ```
 
-### Log Configuration
-
-You can control the verbosity of the logs by changing the `LOG_LEVEL` variable in your `.env` file. Supported levels include `DEBUG`, `INFO`, `WARNING`, and `ERROR`.
-
-```
-# .env file
-LOG_LEVEL="INFO" # Change to "DEBUG" for more detailed output
-```
+The log verbosity can be controlled via the `LOG_LEVEL` variable in your `.env` file (options: `DEBUG`, `INFO`, `WARNING`, `ERROR`).
 
 ## 📁 Project Structure (Highlights)
 
 ```
 universal-mcp/
-├── mcp_server.log               # Main log file
+├── mcp_server.log              # Main log file
 ├── config/
-│   └── settings.py              # Loads configs, including OPENAI_API_KEY
+│   └── settings.py             # Loads configs, including OPENAI_API_KEY
 ├── core/
 │   ├── security/
-│   │   └── query_validator.py   # Includes security check for LLM queries
+│   │   └── query_validator.py  # Security check for LLM queries
 │   └── mcp/
 │       └── tools/
-│           ├── natural_language_query.py # New tool for orchestrating NLQ
-│           └── ...
+│           └── natural_language_query.py # Orchestrates NLQ
 ├── api/
-│   ├── main.py                  # Main FastAPI application
-│   └── query_routes.py          # Defines the /query/natural-language endpoint
+│   ├── main.py                 # Main FastAPI application
+│   └── query_routes.py         # Defines the NLQ endpoint
 ├── services/
-│   ├── ll_service.py           # Handles all interaction with OpenAI API
-│   ├── query_service.py         # Business logic for queries
-│   └── schema_service.py        # Generates schema for LLM context
-└── ...
+│   └── llm_service.py          # Handles all interaction with OpenAI API
+├── storage/
+│   └── session/
+│       └── context_store.py    # Manages file-based session memory
+├── scripts/
+│   ├── setup_database.py       # Initializes the local database
+│   └── chat.py                 # The interactive terminal chat client
+└── tests/
+    ├── unit/
+    │   └── test_query_validator.py
+    └── integration/
+        └── test_nlq_endpoint.py
 ```
 
 ## 🔒 Security Features
 
-*   **LLM Query Validation:** All generated SQL is validated to ensure it is `SELECT`-only and contains no malicious chained commands.
-*   **SQL Injection Prevention:** Parameterized query validation for direct SQL execution.
-*   **Query Sanitization:** Clean and validate SQL statements.
-*   **Rate Limiting:** Prevent abuse and resource exhaustion.
-*   **Secure Credential Management:** Keys and passwords loaded from `.env`.
+*   **LLM Query Validation**: All generated SQL queries are validated to be `SELECT`-only and free of chained commands.
+*   **SQL Injection Prevention**: Parameterized query validation is implemented for direct SQL execution.
+*   **Secure Credential Management**: API keys and database passwords are loaded securely from the `.env` file.
 
-## 🗄️ Supported Databases
-
-| Database   | Status       | Adapter                |
-| :--------- | :----------- | :--------------------- |
-| PostgreSQL | ✅ Supported | `postgresql_adapter.py`  |
-| MySQL      | ✅ Supported | `mysql_adapter.py`       |
-| SQLite     | ✅ Supported | `sqlite_adapter.py`      |
-| Oracle     | 🚧 Planned   | -                      |
-| SQL Server | 🚧 Planned   | -                      |
-
-## 🐳 Deployment
-
-### Docker
+## 🧪 Development & Testing
 
 ```bash
-# Build and run
-docker-compose up -d
-
-# Health check
-curl http://localhost:8000/health
-```
-
-## 🧪 Development
-
-### Running Tests
-
-```bash
-# Unit tests
+# Run unit tests
 pytest tests/unit/
 
-# Integration tests
+# Run integration tests
 pytest tests/integration/
 ```
 

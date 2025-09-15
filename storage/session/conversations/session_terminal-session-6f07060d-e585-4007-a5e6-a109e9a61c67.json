@@ -1,0 +1,18 @@
+[
+  {
+    "role": "user",
+    "content": "what are the 5 oldest projects?"
+  },
+  {
+    "role": "assistant",
+    "content": "I generated the following SQL:\n```sql\nSELECT * FROM employees ORDER BY hire_date ASC LIMIT 5;\n```\nAnd here is a summary of the result:\nThe previous query returned no results."
+  },
+  {
+    "role": "user",
+    "content": "who are the 5 oldest employees"
+  },
+  {
+    "role": "assistant",
+    "content": "I generated the following SQL:\n```sql\nSELECT * FROM employees ORDER BY hire_date ASC LIMIT 5;\n```\nAnd here is a summary of the result:\nThe previous query returned no results."
+  }
+]
