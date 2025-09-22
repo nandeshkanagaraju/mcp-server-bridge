@@ -2,14 +2,12 @@ import json
 import os
 from config.logger import logger
 
-# --- Configuration ---
 # This will create a directory to store conversation files
 SESSION_DIR = "storage/session/conversations"
 os.makedirs(SESSION_DIR, exist_ok=True)
 
 def _get_session_filepath(session_id: str) -> str:
     """Generates a safe file path for a given session ID."""
-    # Basic sanitization to prevent directory traversal
     safe_session_id = "".join(c for c in session_id if c.isalnum() or c in ('-', '_'))
     return os.path.join(SESSION_DIR, f"session_{safe_session_id}.json")
 
