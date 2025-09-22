@@ -1,12 +1,11 @@
-from pydantic import ConfigDict                # <-- CORRECTED: ConfigDict comes from pydantic
-from pydantic_settings import BaseSettings   # <-- CORRECTED: BaseSettings comes from pydantic_settings
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     """
     Defines and loads all application configuration settings from a .env file,
     with sensible defaults for local development.
     """
-    # ... (all your settings variables like DB_USER, OPENAI_API_KEY, etc.)
     DB_USER: str = "root"
     DB_PASSWORD: str = "password"
     DB_HOST: str = "localhost"
@@ -25,7 +24,6 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     cache_ttl: int = 3600
     
-    # This line uses the correctly imported ConfigDict
     model_config = ConfigDict(env_file=".env")
 
 

@@ -1,0 +1,10 @@
+[
+  {
+    "role": "user",
+    "content": "give me first 5 employees"
+  },
+  {
+    "role": "assistant",
+    "content": "I generated the following SQL:\n```sql\nSELECT * FROM employees ORDER BY emp_id LIMIT 5;\n```\nAnd here is a summary of the result:\nThe previous query returned no results."
+  }
+]

@@ -1,5 +1,3 @@
-# core/database/connection_manager.py
-
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from config.settings import settings
 
@@ -9,8 +7,7 @@ DATABASE_URL = (
 )
 
 # Create the SQLAlchemy engine for asynchronous operation.
-engine = create_async_engine(DATABASE_URL, echo=True, future=True)
+engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 
-# Create a configured "Session" class. Instances of this class will be actual database sessions.
-# This object is the main entry point to the database for all queries.
+# Create a configured "Session" class for database interactions.
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)

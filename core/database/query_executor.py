@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from core.database.connection_manager import SessionLocal  # <-- CHANGE THIS IMPORT
+from core.database.connection_manager import SessionLocal
 from config.logger import logger
 
 async def execute_sql(sql: str, params: dict = None) -> list[dict]:
@@ -7,7 +7,7 @@ async def execute_sql(sql: str, params: dict = None) -> list[dict]:
     Execute a raw SQL query with parameters to prevent SQL injection.
     """
     try:
-        async with SessionLocal() as session:  # <-- USE SessionLocal() HERE
+        async with SessionLocal() as session:
             result = await session.execute(text(sql), params)
             rows = result.mappings().all()
             return [dict(row) for row in rows]
@@ -30,7 +30,7 @@ async def fetch_paginated_table_rows(table_name: str, limit: int, offset: int) -
     # Using named parameters (:limit, :offset) to prevent SQL injection.
     sql = f"SELECT * FROM {table_name} LIMIT :limit OFFSET :offset"
     params = {"limit": limit, "offset": offset}
-    
+
     logger.info(f"Executing paginated query on {table_name}: LIMIT {limit}, OFFSET {offset}")
-    
+
     return await execute_sql(sql, params)
