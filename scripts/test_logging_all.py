@@ -1,4 +1,3 @@
-# scripts/test_logging_all.py
 from config.logger import logger
 from core.mcp.tools.execute_query import run_execute_query
 from core.mcp.tools.get_schema import run_get_schema
@@ -11,36 +10,30 @@ def test_all_tools():
     logger.info("===== Starting All Tools Logging Test =====")
     
     try:
-        # 1. execute_query
         logger.info("Testing execute_query...")
         result = run_execute_query("SELECT * FROM employees LIMIT 3;")
         logger.info(f"execute_query result: {result}")
 
-        # 2. get_schema
         logger.info("Testing get_schema...")
         schema = run_get_schema()
         logger.info(f"get_schema result: {schema}")
 
-        # 3. list_tables
         logger.info("Testing list_tables...")
         tables = run_list_tables()
         logger.info(f"list_tables result: {tables}")
 
-        # 4. describe_table
         if tables:
             table_name = tables[0]
             logger.info(f"Testing describe_table for '{table_name}'...")
             description = run_describe_table(table_name)
             logger.info(f"describe_table result: {description}")
 
-        # 5. get_table_data
         if tables:
             table_name = tables[0]
             logger.info(f"Testing get_table_data for '{table_name}'...")
             data = run_get_table_data(table_name, limit=3)
             logger.info(f"get_table_data result: {data}")
 
-        # 6. validate_query
         logger.info("Testing validate_query...")
         valid = run_validate_query("SELECT * FROM employees LIMIT 3;")
         logger.info(f"validate_query result: {valid}")

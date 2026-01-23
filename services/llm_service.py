@@ -4,7 +4,6 @@ from config.settings import settings
 from config.logger import logger
 from storage.session import context_store
 
-# These functions now use the file store and are synchronous
 def get_conversation_history(session_id: str) -> list:
     """Retrieves conversation history for a given session from a file."""
     return context_store.get_history(session_id)
@@ -18,7 +17,6 @@ def update_conversation_history(session_id: str, user_question: str, assistant_s
     history.append({"role": "assistant", "content": assistant_content.strip()})
     context_store.set_history(session_id, history)
 
-# This function remains async because the OpenAI call is async
 async def generate_sql_from_prompt(question: str, schema: str, session_id: str) -> str:
     """Generates a safe SELECT SQL query from a natural language question."""
     client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)

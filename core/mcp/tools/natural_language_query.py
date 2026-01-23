@@ -23,7 +23,6 @@ async def run_natural_language_query(question: str, session_id: str):
     try:
         data = await execute_sql(generated_sql)
         
-        # This call is now SYNCHRONOUS (no 'await')
         llm_service.update_conversation_history(
             session_id=session_id,
             user_question=question,

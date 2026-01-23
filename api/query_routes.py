@@ -3,10 +3,8 @@ from pydantic import BaseModel, Field
 from config.logger import logger
 from core.mcp.tools.natural_language_query import run_natural_language_query
 
-# Create a new router. We can add a prefix for versioning.
 router = APIRouter(prefix="/api/v1")
 
-# Define the request model using Pydantic for automatic validation.
 class NLQRequest(BaseModel):
     question: str = Field(..., description="The natural language question to be converted to SQL.")
     session_id: str = Field(..., description="A unique ID to maintain conversation history.")
@@ -25,7 +23,6 @@ async def handle_natural_language_query(request: NLQRequest):
         )
         
         if result.get("status") == "error":
-            # If the tool returns a known error, return it with a 400 status code.
             raise HTTPException(status_code=400, detail=result.get("message", "An error occurred."))
             
         return result

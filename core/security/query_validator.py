@@ -11,17 +11,14 @@ def is_select_only(sql: str) -> bool:
         return False
     
     try:
-        # Split statements to prevent multiple commands (e.g., SELECT ...; DROP TABLE ...)
         parsed_statements = sqlparse.parse(sql)
         
-        # We only allow one single statement.
         if len(parsed_statements) > 1:
             logger.warning(f"Validation failed: Multiple SQL statements detected in query '{sql}'")
             return False
 
         statement = parsed_statements[0]
         
-        # Check the type of the single statement
         if statement.get_type() == 'SELECT':
             logger.info("SQL validation successful: Query is a valid SELECT statement.")
             return True

@@ -33,9 +33,8 @@ async def test_natural_language_query_endpoint(client: AsyncClient, monkeypatch)
         mock_execute_sql
     )
     
-    # CHANGE THIS from "async def" to just "def"
     def mock_update_history(*args, **kwargs):
-        pass # Do nothing
+        pass
     
     monkeypatch.setattr(
         "services.llm_service.update_conversation_history",

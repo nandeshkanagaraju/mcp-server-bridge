@@ -6,23 +6,19 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.syntax import Syntax
 
-# --- Configuration ---
 API_URL = "http://127.0.0.1:8000/api/v1/query/natural-language"
 SESSION_ID = f"terminal-session-{uuid.uuid4()}"
 
-# --- Initialize Rich for beautiful terminal output ---
 console = Console()
 
 def display_results(result: dict):
     """Formats and displays the API response in the terminal."""
 
-    # Display the generated SQL query
     sql_query = result.get("generated_sql", "No SQL was generated.")
     console.print(Panel(Syntax(sql_query, "sql", theme="monokai", line_numbers=True), 
                         title="[bold green]Generated SQL[/bold green]", 
                         border_style="green"))
 
-    # Display the data in a table
     data = result.get("data")
     if not data:
         console.print("[yellow]The query returned no results.[/yellow]")
@@ -31,14 +27,11 @@ def display_results(result: dict):
     try:
         table = Table(title="[bold blue]Query Results[/bold blue]", show_header=True, header_style="bold magenta")
         
-        # Create columns from the keys of the first row
         headers = data[0].keys()
         for header in headers:
             table.add_column(header, style="cyan")
             
-        # Add rows
         for row in data:
-            # Convert all values to strings for display
             table.add_row(*[str(item) for item in row.values()])
             
         console.print(table)

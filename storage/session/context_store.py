@@ -2,7 +2,6 @@ import json
 import os
 from config.logger import logger
 
-# This will create a directory to store conversation files
 SESSION_DIR = "storage/session/conversations"
 os.makedirs(SESSION_DIR, exist_ok=True)
 

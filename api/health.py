@@ -8,7 +8,7 @@ router = APIRouter()
 def health_check():
     db = SessionLocal()
     try:
-        db.execute(text("SELECT 1"))  # ✅ Works for MySQL
+        db.execute(text("SELECT 1"))
         return {"status": "ok"}
     except Exception as e:
         return {"status": "error", "message": "Database not reachable"}

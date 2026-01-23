@@ -18,7 +18,6 @@ async def get_paginated_table_data(table_name: str, page: int = 1, page_size: in
     if page_size < 1:
         page_size = 100
         
-    # Calculate the offset for the SQL query
     offset = (page - 1) * page_size
     
     logger.info(f"Fetching paginated data for {table_name}: page={page}, page_size={page_size}")
