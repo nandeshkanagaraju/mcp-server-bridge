@@ -60,9 +60,24 @@ This guide outlines the steps to run the application directly on a local machine
 ### 1. Prerequisites
 
 *   Python 3.11+
-*   A running local MySQL server.
+*   A running local MySQL server (installed via Homebrew or standard installer).
 
-### 2. Setup Environment
+### 2. Local MySQL Setup (macOS via Homebrew)
+
+If you don't have MySQL installed:
+
+```bash
+# Install MySQL
+brew install mysql
+
+# Start the service
+brew services start mysql
+
+# Secure installation (optional but recommended)
+mysql_secure_installation
+```
+
+### 3. Setup Environment
 
 ```bash
 git clone <repository-url>
@@ -76,7 +91,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment
+### 4. Configure Environment
 
 ```bash
 # Copy environment template
@@ -88,15 +103,23 @@ nano .env
 
 **Important**: Ensure `OPENAI_API_KEY` is added and `DB_HOST`, `DB_USER`, and `DB_PASSWORD` match your local MySQL setup.
 
-### 4. Initialize the Database
+### 5. Initialize the Database
 
 This script creates necessary tables and populates them with sample data in your local MySQL database.
 
+First, ensure the database and user exist. You can run this command (replace `YOUR_PASSWORD` with the password from your `.env` file):
+
 ```bash
-python scripts/setup_database.py
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS company_db; CREATE USER IF NOT EXISTS 'mcp_server_user'@'localhost' IDENTIFIED BY 'YOUR_PASSWORD'; GRANT ALL PRIVILEGES ON company_db.* TO 'mcp_server_user'@'localhost'; FLUSH PRIVILEGES;"
 ```
 
-### 5. Start the Server
+Then, run the setup script to create tables and sample data:
+
+```bash
+python -m scripts.setup_database
+```
+
+### 6. Start the Server
 
 This command starts the FastAPI server, which provides the REST API.
 
@@ -105,7 +128,7 @@ This command starts the FastAPI server, which provides the REST API.
 uvicorn api.main:app --reload --port 8000
 ```
 
-### 6. Chat with Your Database
+### 7. Chat with Your Database
 
 Open a new terminal window and start the interactive chat client.
 

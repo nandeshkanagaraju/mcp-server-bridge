@@ -1,4 +1,3 @@
-cat > .gitignore << 'EOF'
 # Python
 __pycache__/
 *.py[cod]
@@ -55,4 +54,6 @@ htmlcov/
 
 # Secrets
 .env
-EOF
+
+# Session History
+storage/session/conversations/*.json

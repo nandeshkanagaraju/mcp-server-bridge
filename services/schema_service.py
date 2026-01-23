@@ -1,10 +1,6 @@
 from config.logger import logger
 from core.schema.yaml_generator import generate_schema_yaml
-# We will assume you have a metadata_extractor as per your diagram
-# from core.schema.metadata_extractor import get_full_schema_details 
 
-# --- In-memory cache for the schema YAML ---
-# In production, you might replace this with Redis or another caching layer.
 _schema_yaml_cache = None
 
 async def _get_mock_schema_details() -> dict:
@@ -12,7 +8,6 @@ async def _get_mock_schema_details() -> dict:
     MOCK FUNCTION: Replace this with your actual call to the Metadata Extractor.
     This function should inspect the database and return its structure.
     """
-    # This is example data. Your real function would generate this from the live database.
     return {
         "tables": [
             {
@@ -47,8 +42,6 @@ async def get_schema_as_yaml_string(force_refresh: bool = False) -> str:
         return _schema_yaml_cache
 
     logger.info("Generating new schema YAML...")
-    # In a real implementation, you would call your actual metadata extractor here.
-    # schema_details = await get_full_schema_details()
     schema_details = await _get_mock_schema_details()
 
     if not schema_details:

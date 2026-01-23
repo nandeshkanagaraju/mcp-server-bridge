@@ -27,7 +27,6 @@ async def fetch_paginated_table_rows(table_name: str, limit: int, offset: int) -
     Returns:
         A list of rows as dictionaries.
     """
-    # Using named parameters (:limit, :offset) to prevent SQL injection.
     sql = f"SELECT * FROM {table_name} LIMIT :limit OFFSET :offset"
     params = {"limit": limit, "offset": offset}
 

@@ -1,4 +1,3 @@
-# Central DB config for all tools
 db_config = {
     "host": "localhost",
     "user": "root",

@@ -6,8 +6,6 @@ DATABASE_URL = (
     f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 )
 
-# Create the SQLAlchemy engine for asynchronous operation.
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 
-# Create a configured "Session" class for database interactions.
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)

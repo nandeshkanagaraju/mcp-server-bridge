@@ -8,7 +8,6 @@ from sqlalchemy.exc import OperationalError
 from config.settings import settings
 from config.logger import logger
 
-# --- Configuration ---
 DATABASE_URL = (
     f"mysql+pymysql://{settings.DB_USER}:{settings.DB_PASSWORD}@"
     f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
@@ -29,7 +28,6 @@ def setup_database():
         logger.critical("Please check your database connection settings in the .env file.")
         return
 
-    # --- Define Table Schema ---
     departments = Table(
         "departments", metadata,
         Column("dept_id", Integer, primary_key=True, autoincrement=True),
@@ -47,11 +45,10 @@ def setup_database():
         Column("salary", DECIMAL(10, 2)),
         Column("dept_id", Integer, ForeignKey("departments.dept_id")),
     )
-    # ... (Add other table definitions like projects, assignments if needed)
 
     try:
         with engine.connect() as conn:
-            with conn.begin() as trans: # Use a single transaction for the whole process
+            with conn.begin() as trans:
                 logger.info("--- Starting Database Setup ---")
                 
                 logger.info("Dropping all existing tables...")

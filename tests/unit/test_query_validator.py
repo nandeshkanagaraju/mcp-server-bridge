@@ -1,23 +1,21 @@
 import pytest
 from core.security.query_validator import is_select_only
 
-# A list of valid SELECT queries that should be allowed
 valid_select_queries = [
     "SELECT * FROM employees;",
     "SELECT first_name, salary FROM employees WHERE dept_id = 5 ORDER BY salary DESC;",
     "select emp_id from employees limit 10",
-    "   SELECT * FROM departments   ", # with whitespace
+    "   SELECT * FROM departments   ",
 ]
 
-# A list of invalid or malicious queries that MUST be blocked
 invalid_queries = [
     "UPDATE employees SET salary = 120000 WHERE emp_id = 1;",
     "DELETE FROM employees WHERE emp_id = 1;",
     "DROP TABLE employees;",
     "INSERT INTO employees (first_name) VALUES ('Mallory');",
-    "SELECT * FROM employees; DROP TABLE departments;", # SQL Injection attempt
-    "", # Empty query
-    "-- This is just a comment", # Comment only
+    "SELECT * FROM employees; DROP TABLE departments;",
+    "",
+    "-- This is just a comment",
     "TRUNCATE TABLE employees;",
 ]
 

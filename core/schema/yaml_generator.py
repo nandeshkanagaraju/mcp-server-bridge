@@ -13,7 +13,6 @@ def generate_schema_yaml(schema_data: dict) -> str:
         A YAML formatted string representing the schema.
     """
     try:
-        # Dumps the dictionary to a YAML string. indent=2 makes it readable.
         return yaml.dump(schema_data, indent=2, sort_keys=False)
     except Exception as e:
         logger.error(f"Failed to generate schema YAML: {e}")

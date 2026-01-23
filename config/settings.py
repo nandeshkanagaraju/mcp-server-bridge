@@ -27,5 +27,4 @@ class Settings(BaseSettings):
     model_config = ConfigDict(env_file=".env")
 
 
-# Global instance of the settings
 settings = Settings()
