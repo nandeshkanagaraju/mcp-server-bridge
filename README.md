@@ -1,228 +1,176 @@
-# Universal MCP: An Intelligent Database Gateway
+# Universal MCP
 
-Universal MCP is an intelligent database gateway designed to provide secure and intelligent access to various databases. It supports both direct SQL execution via the MCP protocol and natural language queries (Text-to-SQL) through a REST API, leveraging OpenAI's GPT models for advanced natural language processing capabilities.
+A database gateway that exposes a relational database to LLM clients through two paths: a set of MCP tools for direct, deterministic access, and a REST endpoint that translates natural language into validated SQL with conversation memory. Both paths share one execution and validation layer, so nothing reaches the database without passing the same checks.
 
-## 🏗️ Architecture
+Built on FastMCP and FastAPI, with GPT-4o for text-to-SQL and MySQL as the backing store.
 
-The server architecture integrates an intelligence layer directly, offering a hybrid approach to data access. This design allows for flexible interaction with physical databases while incorporating advanced AI functionalities.
+---
+
+## Two access paths, and why
+
+An MCP client and a person asking a question need different things from the same database, and collapsing them into one interface makes both worse.
+
+**MCP tools — deterministic access.** An MCP client already knows what it wants: list the tables, describe one, page through rows, run a query. These are exposed as typed tools with no model in the loop, so the result is reproducible and cheap.
+
+**REST endpoint — natural language.** A person asking *"who are the five highest-paid engineers?"* has no schema in hand. That path sends the schema to the model as context, gets SQL back, validates it, and executes it — with session history so follow-up questions resolve against what was just asked.
+
+---
+
+## Natural language pipeline
+
+1. **Schema as context** — the database schema is serialized to YAML and cached, then supplied to the model so it generates SQL against real table and column names.
+2. **Generation** — GPT-4o receives the schema, the session's prior turns, and the question at `temperature=0`, constrained by prompt to emit a single raw `SELECT`.
+3. **Validation** — the generated SQL is parsed with `sqlparse` and rejected unless it is exactly one statement of type `SELECT`. Prompt rules are not treated as a security boundary; this check is.
+4. **Execution** — the validated query runs through the async SQLAlchemy engine with bound parameters.
+5. **Memory** — the question, the SQL, and a summary of the result set are appended to a per-session JSON file, so context carries forward without replaying full result sets into the prompt.
+
+---
+
+## MCP tools
+
+| Tool | Description |
+|------|-------------|
+| `run_execute_query` | Execute a SQL query and return rows as records |
+| `run_get_schema` | List every table in the database |
+| `run_list_tables` | Table listing for client discovery |
+| `run_describe_table` | Column names, types, keys and nullability for one table |
+| `run_get_table_data` | Paginated row access via `page` / `page_size` |
+| `run_validate_query` | Check a query against the read-only policy before running it |
+
+## REST API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/query/natural-language` | `POST` | Takes `question` and `session_id`; returns the generated SQL and result rows |
+| `/health` | `GET` | Liveness check that issues a real query against the database |
+| `/` | `GET` | Service banner |
+
+An interactive terminal client (`scripts/chat.py`) drives the NLQ endpoint, rendering generated SQL with syntax highlighting and results as a formatted table.
+
+---
+
+## Security
+
+- **Read-only by construction.** Every model-generated query is parsed and must resolve to a single `SELECT` statement. `INSERT`, `UPDATE`, `DELETE` and `DROP` never pass validation.
+- **No statement chaining.** Multi-statement input is rejected at parse time, closing off `SELECT ...; DROP TABLE ...` style payloads.
+- **Bound parameters.** Pagination and other server-constructed queries pass values as bound parameters rather than string interpolation.
+- **Fail closed.** A parse error, an empty query, or an LLM error resolves to rejection, not to execution.
+
+---
+
+## Project layout
 
 ```
-┌─────────────────┐    MCP Protocol     ┌──────────────────────────────────┐
-│                 │    (HTTP+SSE)       │                                  │
-│   MCP Clients   │◄──────────────────►│     Universal MCP Server         │
-│ (VSCode, etc.)  │                     │                                  │
-└─────────────────┘                     │ ┌──────────────────────────────┐ │
-                                        │ │       Intelligence           │ │
-┌─────────────────┐    REST API         │ │                                │ │
-│                 │                     │ │ • NLP-to-SQL (via REST API)  │ │
-│  REST Clients   │◄───────────────────►│ │ • LLM Integration (ChatGPT)  │ │
-│ (Web Apps, etc.)│                     │ │ • Conversation Memory        │ │
-└─────────────────┘                     │ │ • SQL Generation & Validation│ │
-                                        │ └──────────────────────────────┘ │
-                                        │ ┌──────────────────────────────┐ │
-                                        │ │    Core Services & Tools     │ │
-                                        │ │                              │ │
-                                        │ │ • Schema Management          │ │
-                                        │ │ • Secure Query Executor      │ │
-                                        │ │ • Multi-DB Support           │ │
-                                        │ └───────────────┬──────────────┘ │
-                                        └─────────────────│────────────────┘
-                                                          │
-                                                          ▼
-                                        ┌──────────────────────────────────┐
-                                        │         Physical Databases       │
-                                        │ (PostgreSQL, MySQL, SQLite, etc.)│
-                                        └──────────────────────────────────┘
+api/          FastAPI app — NLQ route, health check
+core/
+  mcp/        FastMCP server and tool definitions
+  database/   Async engine, connection manager, query executor
+  schema/     Schema-to-YAML generation
+  security/   SQL validation
+services/     LLM, schema, and query orchestration
+storage/      File-backed session store for conversation history
+scripts/      Database setup, interactive chat client
+tests/        Unit and integration tests
 ```
 
-## 🎯 Purpose
+---
 
-Universal MCP functions as a hybrid database gateway with the following core purposes:
+## Quick start
 
-*   **Secure REST API**: Provides an interface for converting natural language questions into SQL queries.
-*   **Conversation Management**: Manages conversation history to support contextual, multi-turn questions.
-*   **Secure SQL Execution**: Offers secure and validated SQL execution via the traditional MCP protocol.
-*   **Schema Generation**: Generates database schema YAML for tool configuration and LLM context.
-*   **Multi-Database Support**: Supports various database types through a flexible adapter pattern.
-
-## ✨ New Feature: Natural Language Queries (Text-to-SQL)
-
-The server now incorporates a robust REST API and an interactive terminal client that utilizes ChatGPT to translate natural language into SQL queries. Key aspects of this feature include:
-
-*   **Conversational Memory**: The system maintains conversation context using a persistent file-based session store, enabling users to ask follow-up questions.
-*   **Secure by Design**: All LLM-generated queries undergo a security validation process, ensuring that only safe `SELECT` statements are executed.
-*   **Interactive Terminal Client**: A user-friendly terminal interface (`scripts/chat.py`) facilitates full conversational interaction with the database.
-
-## 🚀 Quick Start (Local Setup)
-
-This guide outlines the steps to run the application directly on a local machine (macOS/Linux).
-
-### 1. Prerequisites
-
-*   Python 3.11+
-*   A running local MySQL server (installed via Homebrew or standard installer).
-
-### 2. Local MySQL Setup (macOS via Homebrew)
-
-If you don't have MySQL installed:
+**Prerequisites:** Python 3.11+, a running MySQL server, an OpenAI API key.
 
 ```bash
-# Install MySQL
-brew install mysql
+git clone https://github.com/nandeshkanagaraju/mcp-server-bridge.git
+cd mcp-server-bridge
 
-# Start the service
-brew services start mysql
-
-# Secure installation (optional but recommended)
-mysql_secure_installation
-```
-
-### 3. Setup Environment
-
-```bash
-git clone <repository-url>
-cd universal-mcp
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate
-
-# Install dependencies
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+
+cp .env.example .env    # add OPENAI_API_KEY and your MySQL credentials
 ```
 
-### 4. Configure Environment
+Create the database and user, then seed it with sample tables and generated data:
 
 ```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env and add your local database credentials and OpenAI API key
-nano .env
-```
-
-**Important**: Ensure `OPENAI_API_KEY` is added and `DB_HOST`, `DB_USER`, and `DB_PASSWORD` match your local MySQL setup.
-
-### 5. Initialize the Database
-
-This script creates necessary tables and populates them with sample data in your local MySQL database.
-
-First, ensure the database and user exist. You can run this command (replace `YOUR_PASSWORD` with the password from your `.env` file):
-
-```bash
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS company_db; CREATE USER IF NOT EXISTS 'mcp_server_user'@'localhost' IDENTIFIED BY 'YOUR_PASSWORD'; GRANT ALL PRIVILEGES ON company_db.* TO 'mcp_server_user'@'localhost'; FLUSH PRIVILEGES;"
-```
-
-Then, run the setup script to create tables and sample data:
-
-```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS company_db;"
 python -m scripts.setup_database
 ```
 
-### 6. Start the Server
-
-This command starts the FastAPI server, which provides the REST API.
+Run the REST API, and the chat client in a second terminal:
 
 ```bash
-# Leave this terminal running
 uvicorn api.main:app --reload --port 8000
-```
-
-### 7. Chat with Your Database
-
-Open a new terminal window and start the interactive chat client.
-
-```bash
-# Make sure your virtual environment is activated
-source venv/bin/activate
-
-# Run the chat script
 python scripts/chat.py
 ```
 
-## 🔧 Available Tools & APIs
-
-### Natural Language API
-
-| Endpoint                     | Method | Description                                                    |
-| :--------------------------- | :----- | :------------------------------------------------------------- |
-| `/api/v1/query/natural-language` | `POST`   | Converts a natural language question to a SQL query and executes it. |
-
-### Traditional MCP Tools
-
-| Tool              | Description                                        |
-| :---------------- | :------------------------------------------------- |
-| `execute_query`     | Execute validated SQL queries safely.              |
-| `get_schema`        | Retrieve complete database schema.                 |
-| `list_tables`       | Get list of available tables.                      |
-| `describe_table`    | Get detailed table structure.                      |
-| `get_table_data`    | Retrieve paginated data from tables.               |
-| `validate_query`    | Validate SQL syntax and security.                  |
-
-#### Using Pagination
-
-The `get_table_data` tool supports pagination for efficient handling of large tables. Use the `page` and `page_size` parameters to request specific data chunks.
-
-## 📊 Monitoring & Observability
-
-### How to Access Logs
-
-Logs are crucial for debugging and can be accessed in two ways:
-
-*   **Real-time Console Output**: All logs are streamed directly to the terminal where the `uvicorn` server is running.
-*   **Persistent Log File**: The server also writes all logs to `mcp_server.log` in the project's root directory.
+The MCP server runs separately, over stdio, for MCP-capable clients:
 
 ```bash
-# Watch the log file for new entries in real-time
-tail -f mcp_server.log
+python -m core.mcp.server
 ```
 
-The log verbosity can be controlled via the `LOG_LEVEL` variable in your `.env` file (options: `DEBUG`, `INFO`, `WARNING`, `ERROR`).
+---
 
-## 📁 Project Structure (Highlights)
+## Configuration
 
-```
-universal-mcp/
-├── mcp_server.log              # Main log file
-├── config/
-│   └── settings.py             # Loads configs, including OPENAI_API_KEY
-├── core/
-│   ├── security/
-│   │   └── query_validator.py  # Security check for LLM queries
-│   └── mcp/
-│       └── tools/
-│           └── natural_language_query.py # Orchestrates NLQ
-├── api/
-│   ├── main.py                 # Main FastAPI application
-│   └── query_routes.py         # Defines the NLQ endpoint
-├── services/
-│   └── llm_service.py          # Handles all interaction with OpenAI API
-├── storage/
-│   └── session/
-│       └── context_store.py    # Manages file-based session memory
-├── scripts/
-│   ├── setup_database.py       # Initializes the local database
-│   └── chat.py                 # The interactive terminal chat client
-└── tests/
-    ├── unit/
-    │   └── test_query_validator.py
-    └── integration/
-        └── test_nlq_endpoint.py
-```
+All settings load from `.env` via `pydantic-settings`.
 
-## 🔒 Security Features
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `OPENAI_API_KEY` | Text-to-SQL generation | *required* |
+| `DB_HOST` / `DB_PORT` / `DB_NAME` | MySQL target | `localhost` / `3306` / `company_db` |
+| `DB_USER` / `DB_PASSWORD` | MySQL credentials | — |
+| `QUERY_TIMEOUT` | Query timeout in seconds | `30` |
+| `MAX_QUERY_LENGTH` | Maximum accepted query length | `10000` |
+| `LOG_LEVEL` | Log verbosity | `INFO` |
 
-*   **LLM Query Validation**: All generated SQL queries are validated to be `SELECT`-only and free of chained commands.
-*   **SQL Injection Prevention**: Parameterized query validation is implemented for direct SQL execution.
-*   **Secure Credential Management**: API keys and database passwords are loaded securely from the `.env` file.
+Logs stream to the console and to `mcp_server.log`.
 
-## 🧪 Development & Testing
+---
+
+## Technology stack
+
+| Layer | Technology |
+|-------|-----------|
+| MCP server | FastMCP, MCP Python SDK |
+| REST API | FastAPI, Uvicorn |
+| Language model | OpenAI GPT-4o |
+| Database access | SQLAlchemy (async), aiomysql, PyMySQL |
+| Validation | `sqlparse` |
+| Configuration | `pydantic-settings` |
+| Terminal client | `rich`, `httpx` |
+| Sample data | Faker |
+| Testing | pytest, `pytest-asyncio` |
+
+---
+
+## Testing
 
 ```bash
-# Run unit tests
-pytest tests/unit/
-
-# Run integration tests
-pytest tests/integration/
+pytest tests/unit/         # SQL validation rules
+pytest tests/integration/  # NLQ endpoint, mocked LLM
 ```
 
+---
+
+## Design decisions
+
+- **Validation sits outside the prompt.** The model is asked for read-only SQL, but a parser decides what actually executes. A prompt is guidance; a parse tree is enforcement.
+- **One executor for both paths.** MCP tools and the NLQ endpoint converge on the same query layer, so security rules cannot drift between interfaces.
+- **Summarized history, not stored result sets.** Conversation memory keeps the question, the SQL, and a row-count summary — enough for follow-ups without growing the prompt with data.
+- **Schema cached, not re-read per request.** Schema changes rarely; regenerating YAML on every question would add latency for nothing.
+- **Sessions on disk.** A file-backed store keeps history across restarts with no extra infrastructure at development scale.
+
+---
+
+## Limitations and next steps
+
+- **MySQL only.** The adapter package is scaffolded for PostgreSQL and SQLite, but only MySQL is implemented.
+- **Schema source is a fixture.** `services/schema_service.py` returns a hardcoded schema; live introspection against the connected database is the next step.
+- **MCP tools use their own connection path.** They connect directly rather than through the shared async engine, and should be consolidated onto it.
+- **Test coverage is narrow.** Validation and the NLQ endpoint are covered; the tool layer and adapters are not.
+- **No rate limiting or auth on the REST API.** Both are scaffolded and unimplemented.
+
+---
+
+Nandesh Kanagaraju — github.com/nandeshkanagaraju

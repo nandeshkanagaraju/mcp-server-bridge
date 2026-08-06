@@ -1,6 +1,9 @@
+from config.settings import settings
+
 db_config = {
-    "host": "localhost",
-    "user": "root",
-    "password": "Jeya@4679",
-    "database": "company_db"
+    "host": settings.DB_HOST,
+    "port": settings.DB_PORT,
+    "user": settings.DB_USER,
+    "password": settings.DB_PASSWORD,
+    "database": settings.DB_NAME,
 }
